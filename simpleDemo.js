@@ -28,7 +28,7 @@
      */
     dropboxClientCredentials = {
       key: "uz03nsz5udagdff",
-      //sandbox phased out in 0.10
+      //sandbox phased out in 0.10 and OAuth 2.0
       //sandbox: false
     };
     //this code is no longer necessary
@@ -99,54 +99,55 @@
       // Construct new ItemMirror in Case 3, could choose other cases
       new ItemMirror(itemMirrorOptions[3], function (error, itemMirror) {
         if (error) { throw error; }
+        //SchemaVersion 0.54
+        //alertSchemaVersion(itemMirror);
+        //refreshLoop(itemMirror);
+        listAssociations(itemMirror);
+      });
+    }
 
-        refreshLoop(itemMirror);
-        alertSchemaVersion(itemMirror);
-        itemMirror.listAssociations(function (error, GUIDs){
-          for (var i=0;i<GUIDs.length;i++){
+    function listAssociations(itemMirror){
+          $('#nav').empty();
+         itemMirror.listAssociations(function (error, GUIDs){
+          var length;
+          var cap = 10;
+          if (GUIDs.length >= cap) {
+            length = cap
+          } else {
+            length = GUIDs.length
+          }
+          var displayText;
+          var isGroupingItem;
+          for (var i=0;i<length;i++){
+          //for (var i=0;i<10;i++){
             //code to get displayText and print it out
-            console.log("Reading GUID:" + GUIDs[i]);
-            itemMirror.getAssociationDisplayText(GUIDs[i], function(error, displayText){
-              itemMirror.isAssociatedItemGrouping(GUIDs[i], function(error, isGroupingItem){
-                prntAssoc(error, isGroupingItem, displayText);
-              })
+            //console.log("Reading GUID:" + GUIDs[i]);
+            //get Displaytext for Association
+            itemMirror.getAssociationDisplayText(GUIDs[i], function(error, text){
+              displayText = text;
+              //Check if this Association is a Grouping Item (a folder in the case of dropbox)
             });
+            prntAssoc(error, displayText, GUIDs[i], itemMirror);
           }
           if (error) {
             console.log(error);
           }
         });
-        //createAssociation(itemMirror, createAssociationOptions[1]); // Try swapping out other cases!
-        //createItemMirrorFromGroupingItem(itemMirror);
-      });
     }
 
-    function createItemMirrorFromGroupingItem(itemMirror) {
-      itemMirror.createAssociation(createAssociationOptions[7],
-        function (error, GUID) {
-        if (error) { throw error; }
-
+    function createItemMirrorFromGroupingItem(event) {
+        event.stopPropagation();
+        var itemMirror = event.data.itemmirror;
+        var GUID = event.data.guid;
+        //This will always run the constructor on Case 3, but has the added benefit of
+        //adding a Parent for successful back-navigation
+        console.log("Now creating a grouping item for " + GUID);
         itemMirror.createItemMirrorForAssociatedGroupingItem(
           GUID, function (error, newItemMirror) {
           if (error) { throw error; }
-
-          itemMirror.getItemDescribed(function (error, itemDescribed) {
-            if (error) { throw error; }
-            
-            alert("newItemMirror from Association displayText" + itemDescribed);
-          });
+          //refreshLoop(newItemMirror);
+          listAssociations(newItemMirror);
         });
-      });
-    }
-
-    function getDisplayTextForAssociation(itemMirror, GUID) {
-      itemMirror.getAssociationDisplayText(GUID, function (error, displayText) {
-        if (error) {
-          throw error;
-        }
-
-        // do something with displayText
-      });
     }
 
     function alertSchemaVersion(itemMirror) {
@@ -162,25 +163,37 @@
     }
 
     /**
-     * Let's actually start coding now!
-     *
-     *
+     *The Printout for individual iM Associations
+     *Uses jQuery to manipulate the DOM
      **/
     
-    function prntAssoc(error, isGroupingItem, displayText){
+    function prntAssoc(error, displayText, GUID, itemMirror){
       if (error) {
           throw error;
       }
+      itemMirror.getParent(function(error, parent){
+        if (parent) {
+          listAssociations(parent);
+          $('<a>', {'href':"#" + parent._groupingItemURI, 'text':"^ Up One Level ^"}).before('#nav');
+          //Event Handler for taking it back to parent
+        }
+      });
       //code for print to screen
-      var $thisAssoc = $('<div>', {'text':displayText, 'class':"explorirror"});
-      if (isGroupingItem) {
-        $thisAssoc.prepend($('<img>', {'src':"Folder.png"}));
-      }else{
-        $thisAssoc.prepend($('<img>', {'src':"Document.png"}));
-      }
+      var $thisAssoc = $('<div>', {'class':"explorirror"});
+      $thisAssoc.append($('<p>', {'text':displayText}))
+      itemMirror.isAssociatedItemGrouping(GUID, function(error, isGroupingItem){
+        if (isGroupingItem) {
+            console.log("GUID is " + GUID);
+            console.log("break");
+            $thisAssoc.prepend($('<img>', {'src':"Folder.png", 'alt':displayText, 'title':displayText}));
+            $thisAssoc.bind("click",{guid:GUID, itemmirror:itemMirror},createItemMirrorFromGroupingItem);
+        }else{
+          $thisAssoc.prepend($('<img>', {'src':"Document.png", 'alt':displayText, 'title':displayText}));
+        }
+      });
       $('#nav').append($thisAssoc);
     }
-
+    
     run();
 
   });
