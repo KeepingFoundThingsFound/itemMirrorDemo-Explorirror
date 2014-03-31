@@ -107,13 +107,19 @@
     }
 
     function listAssociations(itemMirror){
+          console.log(itemMirror);
           $('#nav').empty();
          itemMirror.listAssociations(function (error, GUIDs){
           var length;
-          var cap = 10;
+          var cap = 25;
+          itemMirror.getParent(function(error, parent){
+            if (parent) {
+              upOneLevel(parent);
+            }
+          });
           if (GUIDs.length >= cap) {
             length = cap
-          } else {
+          }else {
             length = GUIDs.length
           }
           var displayText;
@@ -136,8 +142,9 @@
     }
 
     function createItemMirrorFromGroupingItem(event) {
-        event.stopPropagation();
+        //event.stopPropagation();
         var itemMirror = event.data.itemmirror;
+        //console.log(itemMirror);
         var GUID = event.data.guid;
         //This will always run the constructor on Case 3, but has the added benefit of
         //adding a Parent for successful back-navigation
@@ -145,7 +152,9 @@
         itemMirror.createItemMirrorForAssociatedGroupingItem(
           GUID, function (error, newItemMirror) {
           if (error) { throw error; }
+          //console.log(newItemMirror);
           //refreshLoop(newItemMirror);
+          //newItemMirror._groupingItemURI = newItemMirror._groupingItemURI;
           listAssociations(newItemMirror);
         });
     }
@@ -171,20 +180,13 @@
       if (error) {
           throw error;
       }
-      itemMirror.getParent(function(error, parent){
-        if (parent) {
-          listAssociations(parent);
-          $('<a>', {'href':"#" + parent._groupingItemURI, 'text':"^ Up One Level ^"}).before('#nav');
-          //Event Handler for taking it back to parent
-        }
-      });
       //code for print to screen
       var $thisAssoc = $('<div>', {'class':"explorirror"});
       $thisAssoc.append($('<p>', {'text':displayText}))
       itemMirror.isAssociatedItemGrouping(GUID, function(error, isGroupingItem){
         if (isGroupingItem) {
-            console.log("GUID is " + GUID);
-            console.log("break");
+            //console.log("GUID is " + GUID);
+            //console.log("break");
             $thisAssoc.prepend($('<img>', {'src':"Folder.png", 'alt':displayText, 'title':displayText}));
             $thisAssoc.bind("click",{guid:GUID, itemmirror:itemMirror},createItemMirrorFromGroupingItem);
         }else{
@@ -192,6 +194,16 @@
         }
       });
       $('#nav').append($thisAssoc);
+    }
+    
+    function upOneLevel(parent) {
+      $('a#upOneLvl').remove();
+     $('<a>', {'href':"#" + parent._groupingItemURI, 'text':"^ Up One Level ^", id: "upOneLvl"}).on("click", function(){
+        if (parent) {
+          listAssociations(parent)
+           //Event Handler for taking it back to parent
+         }
+     }).insertBefore('#nav');
     }
     
     run();
