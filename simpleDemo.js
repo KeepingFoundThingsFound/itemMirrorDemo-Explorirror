@@ -49,7 +49,14 @@
     mirrorSyncUtility = {
       utilityURI: "MirrorSyncUtility"
     };
+    
+    //This is the starting point where the initial item mirror item will be
+    //constructed: root. It can also be the name of
+    //or path to a folder you want to limit access to
     groupingItemURI = "/";
+    
+    //Set up all of the item mirror options, even though
+    //chances are the only one you're going to use is case 3
     itemMirrorOptions = {
       1: {
         groupingItemURI: groupingItemURI,
@@ -72,6 +79,8 @@
       }
     };
 
+    //Authenticate dropbox access and construct your root/initial
+    //item mirror object when you're ready
     function run() {
       dropboxClient.authenticate(function (error, client) {
         if (error) {
@@ -95,28 +104,32 @@
       }, 10000);
     }
 
+    //Construct an itemMirror object and do something with it
     function constructNewItemMirror() {
       // Construct new ItemMirror in Case 3, could choose other cases
       new ItemMirror(itemMirrorOptions[3], function (error, itemMirror) {
         if (error) { throw error; }
         //SchemaVersion 0.54
         //alertSchemaVersion(itemMirror);
-        //refreshLoop(itemMirror);
+        refreshLoop(itemMirror);
         listAssociations(itemMirror);
       });
     }
 
+    //get an array of Association GUIDs and do something with it.
     function listAssociations(itemMirror){
           console.log(itemMirror);
           $('#nav').empty();
          itemMirror.listAssociations(function (error, GUIDs){
           var length;
+          //Limit output to x associations
           var cap = 25;
           itemMirror.getParent(function(error, parent){
             if (parent) {
               upOneLevel(parent);
             }
           });
+          //make sure length does not exceed cap.
           if (GUIDs.length >= cap) {
             length = cap
           }else {
@@ -124,6 +137,7 @@
           }
           var displayText;
           var isGroupingItem;
+          //loop across GUID up to length
           for (var i=0;i<length;i++){
           //for (var i=0;i<10;i++){
             //code to get displayText and print it out
@@ -133,6 +147,7 @@
               displayText = text;
               //Check if this Association is a Grouping Item (a folder in the case of dropbox)
             });
+            //Print the Association
             prntAssoc(error, displayText, GUIDs[i], itemMirror);
           }
           if (error) {
@@ -141,6 +156,8 @@
         });
     }
 
+    //Event handler for navigating into a subfolder/child grouping item
+    //you've clicked on
     function createItemMirrorFromGroupingItem(event) {
         //event.stopPropagation();
         var itemMirror = event.data.itemmirror;
@@ -153,7 +170,7 @@
           GUID, function (error, newItemMirror) {
           if (error) { throw error; }
           //console.log(newItemMirror);
-          //refreshLoop(newItemMirror);
+          refreshLoop(newItemMirror);
           //newItemMirror._groupingItemURI = newItemMirror._groupingItemURI;
           listAssociations(newItemMirror);
         });
@@ -165,7 +182,6 @@
         if (error) {
           throw error;
         }
-
         alert(schemaVersion);
         // do something with schemaVersion
       });
@@ -175,7 +191,6 @@
      *The Printout for individual iM Associations
      *Uses jQuery to manipulate the DOM
      **/
-    
     function prntAssoc(error, displayText, GUID, itemMirror){
       if (error) {
           throw error;
@@ -196,6 +211,7 @@
       $('#nav').append($thisAssoc);
     }
     
+    //Print an up one level button or link
     function upOneLevel(parent) {
       $('a#upOneLvl').remove();
      $('<a>', {'href':"#" + parent._groupingItemURI, 'text':"^ Up One Level ^", id: "upOneLvl"}).on("click", function(){
