@@ -205,7 +205,15 @@
             $thisAssoc.prepend($('<img>', {'src':"Folder.png", 'alt':displayText, 'title':displayText}));
             $thisAssoc.bind("click",{guid:GUID, itemmirror:itemMirror},createItemMirrorFromGroupingItem);
         }else{
-          $thisAssoc.prepend($('<img>', {'src':"Document.png", 'alt':displayText, 'title':displayText}));
+          itemMirror.getURLForAssociatedNonGroupingItem(GUID, function(error, publicURL){
+            if (error) {
+              console.log(error);
+            }
+            console.log(publicURL);
+            var $link = $('<a>',{'href': publicURL, 'target':"_blank"});
+            var $linkedDoc = $link.append($('<img>', {'src':"Document.png", 'alt':displayText, 'title':displayText}));
+            $thisAssoc.prepend($linkedDoc);
+          });
         }
       });
       $('#nav').append($thisAssoc);
