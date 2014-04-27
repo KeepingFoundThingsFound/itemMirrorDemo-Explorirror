@@ -17,8 +17,11 @@
       itemMirrorOptions,
       createAssociationOptions;
 
+	//GLOBAL vars for internal app usage;
+	var CLIPBOARD = null;
+
     // Insert your Dropbox app key here:
-    var DROPBOX_APP_KEY = '';
+    var DROPBOX_APP_KEY = 'uz03nsz5udagdff';
       
     /**
      * dropboxClientCredentials.sandbox should be true when you want to use
@@ -27,7 +30,7 @@
      * you want to restrict the application to a sandboxed application folder.
      */
     dropboxClientCredentials = {
-      key: "uz03nsz5udagdff",
+      key: DROPBOX_APP_KEY,
       //sandbox phased out in 0.10 and OAuth 2.0
       //sandbox: false
     };
@@ -123,12 +126,19 @@
          itemMirror.listAssociations(function (error, GUIDs){
           var length;
           //Limit output to x associations
-          var cap = 25;
+          var cap = 35;
+
+	//Check if this itemMirror has a parent
           itemMirror.getParent(function(error, parent){
             if (parent) {
               upOneLevel(parent);
             }
           });
+
+		//Check if a copied or cut item is present in the clipboard
+		if(CLIPBOARD){
+			pasteButton(itemMirror);
+		};
           //make sure length does not exceed cap.
           if (GUIDs.length >= cap) {
             length = cap
@@ -175,6 +185,30 @@
           listAssociations(newItemMirror);
         });
     }
+	//Function to cut itemMirror to the clipboard
+	function cutAssociation(event){
+		var itemMirror = event.data.itemmirror;
+        	var GUID = event.data.guid;
+		itemMirror.cutAssociation(GUID, function(error, itemMirror, GUID, cut){
+			if (error) {
+				throw error;
+			}	
+			CLIPBOARD = {   ItemMirror: itemMirror,
+					GUID: GUID,
+					cut: cut};
+		});
+	}
+
+	//Function to paste the clipboard content
+	function pasteAssociation(ItemMirror){
+		var cb = CLIPBOARD;
+		ItemMirror.pasteAssociation(cb.ItemMirror, cb.GUID, cb.cut, function(error){
+			if(error){
+				throw error;
+			}
+			CLIPBOARD = null;
+		});
+	}
 
     function alertSchemaVersion(itemMirror) {
       // Most "get" methods follow this pattern. Check documentation to be sure.
@@ -205,15 +239,8 @@
             $thisAssoc.prepend($('<img>', {'src':"Folder.png", 'alt':displayText, 'title':displayText}));
             $thisAssoc.bind("click",{guid:GUID, itemmirror:itemMirror},createItemMirrorFromGroupingItem);
         }else{
-          itemMirror.getURLForAssociatedNonGroupingItem(GUID, function(error, publicURL){
-            if (error) {
-              console.log(error);
-            }
-            console.log(publicURL);
-            var $link = $('<a>',{'href': publicURL, 'target':"_blank"});
-            var $linkedDoc = $link.append($('<img>', {'src':"Document.png", 'alt':displayText, 'title':displayText}));
-            $thisAssoc.prepend($linkedDoc);
-          });
+          	$thisAssoc.prepend($('<img>', {'src':"Document.png", 'alt':displayText, 'title':displayText}));
+          	$thisAssoc.bind("click", {guid:GUID, itemmirror:itemMirror},cutAssociation);
         }
       });
       $('#nav').append($thisAssoc);
@@ -229,6 +256,14 @@
          }
      }).insertBefore('#nav');
     }
+
+	//Print a Paste button or link
+	function pasteButton(ItemMirror){
+		$('button#paste').remove();
+		$('<button>', {type: "button", text:"Paste", id:"paste"}).on("click", function(){
+			pasteAssociation(ItemMirror);
+		}).insertBefore('#nav');
+	}
     
     run();
 
