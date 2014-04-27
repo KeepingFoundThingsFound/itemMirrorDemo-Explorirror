@@ -19,6 +19,7 @@
 
 	//GLOBAL vars for internal app usage;
 	var CLIPBOARD = null;
+        var CUT = false; //Cut or Copy
 
     // Insert your Dropbox app key here:
     var DROPBOX_APP_KEY = 'uz03nsz5udagdff';
@@ -103,7 +104,14 @@
      */
     function refreshLoop(itemMirror) {
       setTimeout(function () {
-        itemMirror.refresh();
+        itemMirror.refresh(function(error, ItemMirror){
+          if (error) {
+            throw error;
+          }
+          if (ItemMirror) {
+            listAssociations(ItemMirror);
+          }
+        });
       }, 10000);
     }
 
@@ -127,14 +135,13 @@
           var length;
           //Limit output to x associations
           var cap = 35;
-
+          $('a#upOneLvl').remove();
 	//Check if this itemMirror has a parent
           itemMirror.getParent(function(error, parent){
             if (parent) {
               upOneLevel(parent);
             }
           });
-
 		//Check if a copied or cut item is present in the clipboard
 		if(CLIPBOARD){
 			pasteButton(itemMirror);
@@ -189,14 +196,28 @@
 	function cutAssociation(event){
 		var itemMirror = event.data.itemmirror;
         	var GUID = event.data.guid;
-		itemMirror.cutAssociation(GUID, function(error, itemMirror, GUID, cut){
-			if (error) {
-				throw error;
-			}	
-			CLIPBOARD = {   ItemMirror: itemMirror,
-					GUID: GUID,
-					cut: cut};
-		});
+                if (CUT) { //cut or copy
+                  itemMirror.cutAssociation(GUID, function(error, itemMirror, GUID, cut){
+                          if (error) {
+                                  throw error;
+                          }	
+                          CLIPBOARD = {   ItemMirror: itemMirror,
+                                          GUID: GUID,
+                                          cut: cut};
+                          console.log(CLIPBOARD);
+                  });
+                }else{
+                  itemMirror.copyAssociation(GUID, function(error, itemMirror, GUID, cut){
+                          if (error) {
+                                  throw error;
+                          }	
+                          CLIPBOARD = {   ItemMirror: itemMirror,
+                                          GUID: GUID,
+                                          cut: cut};
+                          console.log(CLIPBOARD);
+                  });
+                }
+
 	}
 
 	//Function to paste the clipboard content
@@ -207,6 +228,14 @@
 				throw error;
 			}
 			CLIPBOARD = null;
+                        ItemMirror.sync(function(error, itemMirror){
+                          if (error) {
+                            throw error;
+                          }
+                           listAssociations(ItemMirror);
+                           $('button#paste').remove();
+                        });
+                        
 		});
 	}
 
@@ -248,10 +277,9 @@
     
     //Print an up one level button or link
     function upOneLevel(parent) {
-      $('a#upOneLvl').remove();
      $('<a>', {'href':"#" + parent._groupingItemURI, 'text':"^ Up One Level ^", id: "upOneLvl"}).on("click", function(){
         if (parent) {
-          listAssociations(parent)
+          listAssociations(parent);
            //Event Handler for taking it back to parent
          }
      }).insertBefore('#nav');
