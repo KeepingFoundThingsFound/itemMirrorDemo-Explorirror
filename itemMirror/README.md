@@ -11,3 +11,4 @@ otherwise, it won't work.
 If your port 80 is closed,
 then use localhost:8000/itemMirror/simpleDemo.html or localhost:137/itemMirror/simpleDemo.html
 
+Once again, you need a local copy of item mirror dropped into this folder, otherwise it will not work.
