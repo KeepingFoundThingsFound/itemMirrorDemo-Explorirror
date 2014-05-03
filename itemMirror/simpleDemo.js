@@ -19,7 +19,8 @@
 
 	//GLOBAL vars for internal app usage;
 	var CLIPBOARD = null;
-        var CUT = false; //Cut or Copy
+        var CUT = true; //Cut or Copy, which would you like to demo?
+        var CURRITEMMIRROR;
 
     // Insert your Dropbox app key here:
     var DROPBOX_APP_KEY = 'uz03nsz5udagdff';
@@ -129,6 +130,7 @@
 
     //get an array of Association GUIDs and do something with it.
     function listAssociations(itemMirror){
+          CURRITEMMIRROR = itemMirror;
           console.log(itemMirror);
           $('#nav').empty();
          itemMirror.listAssociations(function (error, GUIDs){
@@ -196,6 +198,9 @@
 	function cutAssociation(event){
 		var itemMirror = event.data.itemmirror;
         	var GUID = event.data.guid;
+                itemMirror.getAssociationAssociatedItem(GUID, function(error, associatedItem){
+                  console.log("ItemURI or AssociatedItem is: " + associatedItem);
+                });
                 if (CUT) { //cut or copy
                   itemMirror.cutAssociation(GUID, function(error, itemMirror, GUID, cut){
                           if (error) {
@@ -292,6 +297,32 @@
 			pasteAssociation(ItemMirror);
 		}).insertBefore('#nav');
 	}
+        
+        function createPhantom(){
+          var Text = $("input[name*='DisplayText']").val();
+          var URL = $("input[name*='URL']").val();
+          var options = {
+            displayText: Text
+          };
+          if (URL && URL != "") {
+            options.itemURI = URL;
+          }
+          itemMirror = CURRITEMMIRROR;
+          itemMirror.createAssociation(options, function (error, GUID){
+            if (error){
+              throw error;
+            }
+            console.log(GUID);
+            itemMirror.sync(function(error, itemMirror){
+                  if (error) {
+                     throw error;
+                  }
+                   listAssociations(itemMirror);
+            });
+          });
+        }
+    
+    $("input[type*='button']").click(createPhantom);
     
     run();
 
