@@ -194,55 +194,6 @@
           listAssociations(newItemMirror);
         });
     }
-	//Function to cut itemMirror to the clipboard
-	function cutAssociation(event){
-		var itemMirror = event.data.itemmirror;
-        	var GUID = event.data.guid;
-                itemMirror.getAssociationAssociatedItem(GUID, function(error, associatedItem){
-                  console.log("ItemURI or AssociatedItem is: " + associatedItem);
-                });
-                if (CUT) { //cut or copy
-                  itemMirror.cutAssociation(GUID, function(error, itemMirror, GUID, cut){
-                          if (error) {
-                                  throw error;
-                          }	
-                          CLIPBOARD = {   ItemMirror: itemMirror,
-                                          GUID: GUID,
-                                          cut: cut};
-                          console.log(CLIPBOARD);
-                  });
-                }else{
-                  itemMirror.copyAssociation(GUID, function(error, itemMirror, GUID, cut){
-                          if (error) {
-                                  throw error;
-                          }	
-                          CLIPBOARD = {   ItemMirror: itemMirror,
-                                          GUID: GUID,
-                                          cut: cut};
-                          console.log(CLIPBOARD);
-                  });
-                }
-
-	}
-
-	//Function to paste the clipboard content
-	function pasteAssociation(ItemMirror){
-		var cb = CLIPBOARD;
-		ItemMirror.pasteAssociation(cb.ItemMirror, cb.GUID, cb.cut, function(error){
-			if(error){
-				throw error;
-			}
-			CLIPBOARD = null;
-                        ItemMirror.sync(function(error, itemMirror){
-                          if (error) {
-                            throw error;
-                          }
-                           listAssociations(ItemMirror);
-                           $('button#paste').remove();
-                        });
-                        
-		});
-	}
 
     function alertSchemaVersion(itemMirror) {
       // Most "get" methods follow this pattern. Check documentation to be sure.
@@ -274,7 +225,7 @@
             $thisAssoc.bind("click",{guid:GUID, itemmirror:itemMirror},createItemMirrorFromGroupingItem);
         }else{
           	$thisAssoc.prepend($('<img>', {'src':"Document.png", 'alt':displayText, 'title':displayText}));
-          	$thisAssoc.bind("click", {guid:GUID, itemmirror:itemMirror},cutAssociation);
+          	$thisAssoc.bind("click", {guid:GUID, itemmirror:itemMirror},rename);
         }
       });
       $('#nav').append($thisAssoc);
@@ -290,23 +241,10 @@
      }).insertBefore('#nav');
     }
 
-	//Print a Paste button or link
-	function pasteButton(ItemMirror){
-		$('button#paste').remove();
-		$('<button>', {type: "button", text:"Paste", id:"paste"}).on("click", function(){
-			pasteAssociation(ItemMirror);
-		}).insertBefore('#nav');
-	}
-        
-        function createPhantom(){
-          var Text = $("input[name*='DisplayText']").val();
-          var URL = $("input[name*='URL']").val();
-          var options = {
-            displayText: Text
-          };
-          if (URL && URL != "") {
-            options.itemURI = URL;
-          }
+        function rename(event){
+	  var itemMirror = event.data.itemmirror;
+          var GUID = event.data.guid;
+          var Text = $("input[name*='newName']").val();
           itemMirror = CURRITEMMIRROR;
           itemMirror.createAssociation(options, function (error, GUID){
             if (error){
@@ -321,8 +259,6 @@
             });
           });
         }
-    
-    $("input[type*='button']").click(createPhantom);
     
     run();
 
