@@ -130,9 +130,8 @@
 
     //get an array of Association GUIDs and do something with it.
     function listAssociations(itemMirror){
-          CURRITEMMIRROR = itemMirror;
-          console.log(itemMirror);
           $('#nav').empty();
+	  console.log(itemMirror);
          itemMirror.listAssociations(function (error, GUIDs){
           var length;
           //Limit output to x associations
@@ -144,10 +143,6 @@
               upOneLevel(parent);
             }
           });
-		//Check if a copied or cut item is present in the clipboard
-		if(CLIPBOARD){
-			pasteButton(itemMirror);
-		};
           //make sure length does not exceed cap.
           if (GUIDs.length >= cap) {
             length = cap
@@ -244,17 +239,18 @@
         function rename(event){
 	  var itemMirror = event.data.itemmirror;
           var GUID = event.data.guid;
-          var Text = $("input[name*='newName']").val();
-          itemMirror = CURRITEMMIRROR;
-          itemMirror.createAssociation(options, function (error, GUID){
+          var newName = $("input[name*='newName']").val();
+          itemMirror.renameLocalItem(GUID, newName, function (error, GUID){
             if (error){
               throw error;
             }
             console.log(GUID);
-            itemMirror.sync(function(error, itemMirror){
+            itemMirror.sync(function(error, iM){
                   if (error) {
                      throw error;
                   }
+		  console.log(iM);
+		  console.log(itemMirror);
                    listAssociations(itemMirror);
             });
           });
